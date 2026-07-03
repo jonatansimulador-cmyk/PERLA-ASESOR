@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plataforma de Control · Santander Consumer</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14161f;
+    --paper:#f3f4f7;
+    --surface:#ffffff;
+    --santander:#EC0000;
+    --santander-dark:#a90000;
+    --santander-light:#fff0f0;
+    --success:#0f8a45;
+    --success-bg:#e7f7ee;
+    --warning:#b7791f;
+    --warning-bg:#fff6e0;
+    --critical:#c81e1e;
+    --critical-bg:#fdeaea;
+    --border:#e3e5eb;
+    --muted:#6b7280;
+    --radius:14px;
+    --shadow:0 1px 2px rgba(20,22,31,.04), 0 8px 24px -12px rgba(20,22,31,.12);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh; display:flex; flex-direction:column;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{ font-family:'Space Grotesk',system-ui,sans-serif; letter-spacing:-.01em; }
+  .tabular{ font-variant-numeric:tabular-nums; }
+  ::selection{ background:var(--santander-light); color:var(--santander-dark); }
+
+  /* ---------- header ---------- */
+  header.app-header{
+    background:linear-gradient(135deg,var(--santander) 0%, var(--santander-dark) 100%);
+    color:#fff; padding:16px 22px; position:sticky; top:0; z-index:50;
+    box-shadow:0 4px 20px -8px rgba(180,0,0,.45);
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+  }
+  header.app-header .brand{ display:flex; align-items:center; gap:10px; min-width:0; }
+  header.app-header .brand-mark{
+    width:34px; height:34px; border-radius:9px; background:rgba(255,255,255,.16);
+    display:flex; align-items:center; justify-content:center; font-size:17px; flex:none;
+  }
+  header.app-header h1{ font-size:17px; font-weight:600; margin:0; line-height:1.2; }
+  header.app-header p{ margin:0; font-size:11.5px; color:rgba(255,255,255,.78); font-weight:500; }
+  .chip-bank{
+    font-size:11px; font-weight:700; background:#fff; color:var(--santander);
+    padding:5px 12px; border-radius:999px; letter-spacing:.06em; text-transform:uppercase;
+    flex:none;
+  }
+
+  /* ---------- nav ---------- */
+  nav.tabs{
+    background:var(--surface); border-bottom:1px solid var(--border);
+    position:sticky; top:66px; z-index:40;
+  }
+  nav.tabs .wrap{ max-width:1400px; margin:0 auto; padding:0 20px; display:flex; gap:4px; overflow-x:auto; }
+  nav.tabs button{
+    all:unset; cursor:pointer; padding:13px 14px; font-size:13.5px; font-weight:600;
+    color:var(--muted); border-bottom:2.5px solid transparent; white-space:nowrap;
+    display:flex; align-items:center; gap:7px; transition:.15s;
+  }
+  nav.tabs button:hover{ color:var(--ink); }
+  nav.tabs button.active{ color:var(--santander); border-color:var(--santander); }
+  nav.tabs button:focus-visible{ outline:2px solid var(--santander); outline-offset:2px; border-radius:4px; }
+
+  main{ max-width:1400px; margin:0 auto; padding:22px 18px 60px; width:100%; flex:1; }
+  .hidden{ display:none !important; }
+
+  .row-between{ display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:18px; }
+  .section-title{ font-size:19px; font-weight:600; color:var(--ink); margin:0; }
+  .section-sub{ font-size:12.5px; color:var(--muted); margin-top:2px; }
+
+  .btn{
+    border:none; cursor:pointer; font-weight:700; font-size:13px; border-radius:9px;
+    padding:10px 18px; display:inline-flex; align-items:center; gap:7px; transition:.15s;
+  }
+  .btn:focus-visible{ outline:2px solid var(--santander); outline-offset:2px; }
+  .btn-primary{ background:var(--santander); color:#fff; box-shadow:0 4px 14px -6px rgba(236,0,0,.5); }
+  .btn-primary:hover{ background:var(--santander-dark); }
+  .btn-success{ background:var(--success); color:#fff; box-shadow:0 4px 14px -6px rgba(15,138,69,.45); }
+  .btn-success:hover{ background:#0b6e37; }
+  .btn-ghost{ background:var(--surface); color:var(--ink); border:1px solid var(--border); }
+  .btn-ghost:hover{ background:#f7f7f9; }
+  .btn-muted{ background:#e9eaee; color:#565a66; }
+  .btn-muted:hover{ background:#dee0e6; }
+  .btn:disabled{ opacity:.6; cursor:not-allowed; }
+
+  /* ---------- KPI cards ---------- */
+  .kpi-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:26px; }
+  @media(max-width:860px){ .kpi-grid{ grid-template-columns:1fr; } }
+  .kpi-card{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:18px 20px; display:flex; align-items:center; gap:16px;
+  }
+  .ring{ flex:none; width:66px; height:66px; border-radius:50%; display:flex; align-items:center; justify-content:center; position:relative; }
+  .ring::after{ content:''; position:absolute; inset:6px; background:var(--surface); border-radius:50%; }
+  .ring span{ position:relative; z-index:1; font-size:12.5px; font-weight:700; }
+  .kpi-label{ font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+  .kpi-value{ font-size:24px; font-weight:700; margin:2px 0 3px; }
+  .kpi-note{ font-size:11.5px; color:var(--muted); }
+
+  /* ---------- segmented lists (dashboard) ---------- */
+  .seg-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  @media(max-width:980px){ .seg-grid{ grid-template-columns:1fr; } }
+  .seg-card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; display:flex; flex-direction:column; }
+  .seg-head{ padding:11px 16px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#fff; display:flex; align-items:center; justify-content:between; gap:6px; }
+  .seg-head.optimo{ background:var(--success); }
+  .seg-head.medio{ background:var(--warning); }
+  .seg-head.critico{ background:var(--critical); }
+  .seg-body{ max-height:340px; overflow-y:auto; }
+  .seg-body table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  .seg-body th{ position:sticky; top:0; background:#fafafb; text-align:left; padding:9px 14px; font-weight:700; color:var(--muted); font-size:11px; text-transform:uppercase; border-bottom:1px solid var(--border); }
+  .seg-body th.r{ text-align:right; }
+  .seg-body td{ padding:9px 14px; border-bottom:1px solid #f1f1f4; }
+  .seg-body td.r{ text-align:right; }
+  .seg-body tr:hover td{ background:#fafafb; }
+  .empty-row{ text-align:center; color:#a3a6ad; font-style:italic; padding:22px !important; }
+
+  /* ---------- form ---------- */
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); }
+  #vistaRegistro{ padding:26px; max-width:880px; margin:0 auto; }
+  .field-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  @media(max-width:760px){ .field-grid{ grid-template-columns:1fr 1fr; } }
+  @media(max-width:520px){ .field-grid{ grid-template-columns:1fr; } }
+  .field label{ display:block; font-size:12.5px; font-weight:700; color:#43454e; margin-bottom:6px; }
+  .field input{
+    width:100%; border:1.5px solid var(--border); border-radius:9px; padding:10px 12px; font-size:13.5px;
+    font-family:inherit; color:var(--ink); transition:.15s; background:#fdfdfe;
+  }
+  .field input:focus{ outline:none; border-color:var(--santander); box-shadow:0 0 0 3px var(--santander-light); background:#fff; }
+  .field input.upper{ text-transform:uppercase; }
+  .loader{ border:2.5px solid rgba(255,255,255,.4); border-top:2.5px solid #fff; border-radius:50%; width:16px; height:16px; animation:spin .8s linear infinite; }
+  .loader.dark{ border:2.5px solid #eee; border-top:2.5px solid var(--santander); }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .alert{ margin-top:16px; padding:11px 14px; border-radius:9px; font-size:13px; font-weight:600; }
+  .alert.ok{ background:var(--success-bg); color:var(--success); border:1px solid #bfe8cf; }
+  .alert.bad{ background:var(--critical-bg); color:var(--critical); border:1px solid #f3c2c2; }
+
+  /* ---------- ranking ---------- */
+  .toolbar{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .search-wrap{ position:relative; }
+  .search-wrap input{
+    border:1.5px solid var(--border); border-radius:9px; padding:9px 12px 9px 34px; font-size:13px;
+    font-family:inherit; width:230px; background:#fff;
+  }
+  .search-wrap input:focus{ outline:none; border-color:var(--santander); box-shadow:0 0 0 3px var(--santander-light); }
+  .search-wrap svg{ position:absolute; left:11px; top:50%; transform:translateY(-50%); color:#9aa; }
+
+  .team-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(430px,1fr)); gap:14px; align-items:start; }
+  .team-card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+  .team-head{ background:var(--ink); color:#fff; padding:11px 14px; font-size:12.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .team-badge{ font-size:10px; background:rgba(255,255,255,.16); padding:4px 9px; border-radius:999px; font-weight:600; white-space:nowrap; }
+  .team-bar{ height:5px; background:var(--critical); display:flex; }
+  .team-bar span{ background:var(--success); height:100%; }
+  .team-meta{ display:flex; justify-content:space-between; padding:7px 14px; font-size:10.5px; font-weight:700; background:#fafafb; border-bottom:1px solid var(--border); }
+  .team-meta .ok{ color:var(--success); } .team-meta .no{ color:var(--critical); }
+  .team-card table{ width:100%; border-collapse:collapse; font-size:11px; }
+  .team-card thead th{ background:#fafafb; border-bottom:1px solid var(--border); color:#6b7280; text-transform:uppercase; font-size:9.5px; padding:7px 6px; cursor:pointer; user-select:none; }
+  .team-card thead th:hover{ background:#f0f0f3; }
+  .sort-icon{ font-size:9px; color:#b0b2b8; margin-left:2px; }
+  .team-card tbody td{ padding:7px 6px; border-bottom:1px solid #f2f2f4; }
+  .team-card tbody tr:hover td{ background:#fff7f7; }
+  .pill{ display:inline-block; padding:1px 6px; border-radius:6px; font-weight:700; font-size:13px; }
+  .icon-btn{ background:none; border:none; cursor:pointer; font-size:13px; padding:2px 4px; border-radius:6px; }
+  .icon-btn:hover{ background:#f0f0f3; }
+
+  .state-box{ background:var(--surface); border:1px dashed var(--border); border-radius:var(--radius); padding:44px 20px; text-align:center; }
+  .state-box .icon{ font-size:30px; margin-bottom:8px; }
+  .state-box h3{ margin:0 0 4px; font-size:15px; }
+  .state-box p{ margin:0; font-size:13px; color:var(--muted); }
+  .center-row{ display:flex; justify-content:center; align-items:center; gap:10px; padding:50px 0; color:var(--muted); font-weight:600; font-size:13px; }
+
+  /* ---------- toasts + modal ---------- */
+  #toastHost{ position:fixed; bottom:18px; right:18px; z-index:100; display:flex; flex-direction:column; gap:8px; }
+  .toast{ background:var(--ink); color:#fff; padding:12px 16px; border-radius:9px; font-size:13px; font-weight:600; box-shadow:0 10px 30px -10px rgba(0,0,0,.5); display:flex; align-items:center; gap:8px; animation:toastIn .2s ease; max-width:320px; }
+  .toast.ok{ background:#0b6e37; } .toast.bad{ background:#a11919; }
+  @keyframes toastIn{ from{ opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+  #modalHost{ position:fixed; inset:0; background:rgba(20,22,31,.5); display:flex; align-items:center; justify-content:center; z-index:110; padding:16px; }
+  .modal-box{ background:#fff; border-radius:14px; padding:22px; max-width:360px; width:100%; box-shadow:0 20px 60px -20px rgba(0,0,0,.5); }
+  .modal-box h3{ margin:0 0 8px; font-size:16px; }
+  .modal-box p{ margin:0 0 18px; font-size:13.5px; color:var(--muted); }
+  .modal-actions{ display:flex; justify-content:flex-end; gap:8px; }
+
+  ::-webkit-scrollbar{ height:8px; width:8px; }
+  ::-webkit-scrollbar-thumb{ background:#d8d9de; border-radius:8px; }
+
+  /* ---------- edición masiva ---------- */
+  .select-wrap select{
+    border:1.5px solid var(--border); border-radius:9px; padding:9px 32px 9px 12px; font-size:13px;
+    font-family:inherit; background:#fff; cursor:pointer; appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat:no-repeat; background-position:right 10px center; background-size:14px;
+  }
+  .select-wrap select:focus{ outline:none; border-color:var(--santander); box-shadow:0 0 0 3px var(--santander-light); }
+  .dirty-badge{
+    font-size:11px; font-weight:700; background:var(--santander); color:#fff; padding:4px 10px;
+    border-radius:999px; white-space:nowrap;
+  }
+  .masivo-table-wrap{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); overflow:auto; }
+  table.masivo{ width:100%; border-collapse:collapse; font-size:12.5px; min-width:1020px; }
+  table.masivo thead th{
+    position:sticky; top:0; background:#fafafb; border-bottom:1px solid var(--border); color:var(--muted);
+    text-transform:uppercase; font-size:10.5px; font-weight:700; padding:10px 8px; text-align:left; white-space:nowrap;
+  }
+  table.masivo tbody td{ padding:6px 8px; border-bottom:1px solid #f1f1f4; vertical-align:middle; }
+  table.masivo tbody tr.dirty td{ background:#fff8e8; }
+  table.masivo tbody tr:hover td{ background:#fafafb; }
+  table.masivo tbody tr.dirty:hover td{ background:#fff3d6; }
+  .cell-input{
+    width:100%; min-width:76px; border:1.5px solid transparent; background:transparent; border-radius:7px;
+    padding:6px 7px; font-size:12.5px; font-family:inherit; color:var(--ink); transition:.12s;
+  }
+  .cell-input:hover{ border-color:var(--border); background:#fff; }
+  .cell-input:focus{ outline:none; border-color:var(--santander); background:#fff; box-shadow:0 0 0 3px var(--santander-light); }
+  .cell-input.num{ text-align:right; }
+  .cell-input.date{ min-width:120px; }
+  .cell-pct{ text-align:center; font-weight:700; }
+  .row-save-btn{
+    background:var(--ink); color:#fff; border:none; border-radius:7px; padding:6px 10px; font-size:11px;
+    font-weight:700; cursor:pointer; white-space:nowrap;
+  }
+  .row-save-btn:disabled{ background:#d5d6db; cursor:not-allowed; }
+  .row-save-btn:not(:disabled):hover{ background:var(--santander); }
+  .sticky-actions-bar{
+    position:sticky; bottom:0; background:var(--surface); border-top:1px solid var(--border);
+    padding:12px 16px; display:flex; justify-content:flex-end; gap:10px; align-items:center;
+    box-shadow:0 -8px 20px -14px rgba(0,0,0,.25); margin-top:-1px;
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="brand">
+    <div class="brand-mark">📈</div>
+    <div>
+      <h1>Plataforma de Seguimiento</h1>
+      <p>Control diario de cartera y gestión comercial</p>
+    </div>
+  </div>
+  <span class="chip-bank">Santander</span>
+</header>
+
+<nav class="tabs">
+  <div class="wrap">
+    <button id="btnTabDashboard" class="active" onclick="mostrarPestaña('dashboard')">📊 Dashboard General</button>
+    <button id="btnTabRanking" onclick="mostrarPestaña('ranking')">🏆 Ranking de Equipos</button>
+    <button id="btnTabMasivo" onclick="mostrarPestaña('masivo')">🗃️ Edición Masiva</button>
+    <button id="btnTabRegistro" onclick="limpiarYMostrarRegistro()">📝 Registrar Avance</button>
+  </div>
+</nav>
+
+<main>
+
+  <!-- ============ DASHBOARD ============ -->
+  <section id="vistaDashboard">
+    <div class="row-between">
+      <div>
+        <h2 class="section-title">Resumen Ejecutivo</h2>
+        <p class="section-sub" id="lastUpdated">Sincronizando…</p>
+      </div>
+      <button class="btn btn-success" onclick="descargarExcel()">⬇️ Descargar Reporte Excel</button>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="ring" id="ringPagos"><span id="ringPagosTxt">0%</span></div>
+        <div>
+          <div class="kpi-label">% Cumplimiento de Pagos</div>
+          <div class="kpi-value tabular" id="dashPctPagos">0.0%</div>
+          <div class="kpi-note">Monto recaudado vs. meta de cartera</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="ring" id="ringCantidad"><span id="ringCantidadTxt">0%</span></div>
+        <div>
+          <div class="kpi-label">% Asesores Activos</div>
+          <div class="kpi-value tabular" id="dashPctCantidad">0.0%</div>
+          <div class="kpi-note">Asesores que ya concretaron pagos</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="ring" id="ringVariacion"><span id="ringVariacionTxt">0%</span></div>
+        <div>
+          <div class="kpi-label">Variación (Déficit/Superávit)</div>
+          <div class="kpi-value tabular" id="dashVariacion">0.0%</div>
+          <div class="kpi-note">Diferencia neta vs. lo proyectado</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="seg-grid">
+      <div class="seg-card">
+        <div class="seg-head optimo">🟢 Nivel óptimo (≥ 70%)</div>
+        <div class="seg-body"><table>
+          <thead><tr><th>Asesor</th><th class="r">Monto (S/)</th></tr></thead>
+          <tbody id="listaOptimos"></tbody>
+        </table></div>
+      </div>
+      <div class="seg-card">
+        <div class="seg-head medio">🟡 Nivel medio (50%–69%)</div>
+        <div class="seg-body"><table>
+          <thead><tr><th>Asesor</th><th class="r">Monto (S/)</th></tr></thead>
+          <tbody id="listaMedios"></tbody>
+        </table></div>
+      </div>
+      <div class="seg-card">
+        <div class="seg-head critico">🔴 Nivel crítico (&lt; 50% o sin pagos)</div>
+        <div class="seg-body"><table>
+          <thead><tr><th>Asesor</th><th class="r">Monto (S/)</th></tr></thead>
+          <tbody id="listaCriticos"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ REGISTRO ============ -->
+  <section id="vistaRegistro" class="hidden card">
+    <h2 id="formTitle" class="section-title" style="margin-bottom:18px;">Registrar Avance del Asesor</h2>
+    <form id="asesorForm" class="field-grid">
+      <div class="field">
+        <label>Fecha de gestión</label>
+        <input type="date" id="fechaRegistro" required>
+      </div>
+      <div class="field">
+        <label>Nombre del asesor</label>
+        <input type="text" id="asesor" required placeholder="Ej. JUAN" class="upper">
+      </div>
+      <div class="field">
+        <label>Supervisor a cargo</label>
+        <input type="text" id="supervisor" required list="listaSupervisores" placeholder="Ej. VANESSA" class="upper">
+        <datalist id="listaSupervisores">
+          <option value="VANESSA"></option><option value="DAMARIS"></option><option value="JONATAN"></option>
+        </datalist>
+      </div>
+      <div class="field">
+        <label>Meta PDP del día</label>
+        <input type="number" id="metaPdp" required min="0" step="0.01">
+      </div>
+      <div class="field">
+        <label>Avance PDP registrado</label>
+        <input type="number" id="avancePdp" required min="0" step="0.01">
+      </div>
+      <div class="field">
+        <label>Meta pago (recaudación)</label>
+        <input type="number" id="metaPago" required min="0" step="0.01">
+      </div>
+      <div class="field">
+        <label>Pagos confirmados</label>
+        <input type="number" id="pagos" required min="0" step="0.01">
+      </div>
+      <input type="hidden" id="comentario">
+
+      <div style="grid-column:1/-1; display:flex; justify-content:flex-end; gap:10px; margin-top:6px;">
+        <button type="button" id="btnCancelEdit" class="btn btn-muted hidden" onclick="limpiarYMostrarRegistro()">Cancelar</button>
+        <button type="submit" id="btnSubmit" class="btn btn-primary">
+          <span id="btnSubmitText">Cargar registro</span>
+          <div id="submitLoader" class="loader hidden"></div>
+        </button>
+      </div>
+    </form>
+    <div id="formAlert" class="hidden alert"></div>
+  </section>
+
+  <!-- ============ RANKING ============ -->
+  <section id="vistaRanking" class="hidden">
+    <div class="row-between">
+      <div>
+        <h2 class="section-title">Monitoreo de Equipos en Piso</h2>
+        <p class="section-sub" id="rankingCount"></p>
+      </div>
+      <div class="toolbar">
+        <div class="search-wrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="buscarAsesor" type="text" placeholder="Buscar asesor o supervisor…" oninput="renderizarTablasEquipos()">
+        </div>
+        <button class="btn btn-ghost" onclick="cargarDatos()">↻ Refrescar</button>
+      </div>
+    </div>
+
+    <div id="tableLoader" class="center-row"><div class="loader dark"></div><span>Sincronizando con base de datos…</span></div>
+
+    <div id="emptyStateMessage" class="hidden state-box">
+      <div class="icon">🗂️</div>
+      <h3>Aún no hay asesores registrados</h3>
+      <p>Usa "Registrar Avance" para cargar el primer dato de la cartera.</p>
+    </div>
+
+    <div id="noResultsMessage" class="hidden state-box">
+      <div class="icon">🔍</div>
+      <h3>Sin coincidencias</h3>
+      <p>Ningún asesor o supervisor coincide con tu búsqueda.</p>
+    </div>
+
+    <div id="supervisoresContainer" class="team-grid hidden"></div>
+  </section>
+
+  <!-- ============ EDICIÓN MASIVA ============ -->
+  <section id="vistaMasivo" class="hidden">
+    <div class="row-between">
+      <div>
+        <h2 class="section-title">Edición Masiva de Asesores</h2>
+        <p class="section-sub">Edita varios registros a la vez y guarda todo junto. Las filas amarillas tienen cambios sin guardar.</p>
+      </div>
+      <div class="toolbar">
+        <div class="select-wrap">
+          <select id="filtroSupervisorMasivo" onchange="renderizarTablaMasiva()">
+            <option value="">Todos los supervisores</option>
+          </select>
+        </div>
+        <div class="search-wrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="buscarAsesorMasivo" type="text" placeholder="Buscar asesor…" oninput="renderizarTablaMasiva()">
+        </div>
+        <button class="btn btn-ghost" onclick="refrescarMasivo()">↻ Refrescar</button>
+      </div>
+    </div>
+
+    <div id="masivoLoader" class="center-row"><div class="loader dark"></div><span>Sincronizando con base de datos…</span></div>
+
+    <div id="masivoEmptyState" class="hidden state-box">
+      <div class="icon">🗂️</div>
+      <h3>Aún no hay asesores registrados</h3>
+      <p>Usa "Registrar Avance" para cargar el primer dato de la cartera.</p>
+    </div>
+
+    <div id="masivoContainer" class="hidden">
+      <div class="masivo-table-wrap">
+        <table class="masivo">
+          <thead><tr>
+            <th>Fecha</th>
+            <th>Asesor</th>
+            <th>Supervisor</th>
+            <th style="text-align:right;">Meta PDP</th>
+            <th style="text-align:right;">Avance</th>
+            <th style="text-align:center;">% PDP</th>
+            <th style="text-align:right;">Meta Pago</th>
+            <th style="text-align:right;">Pagos</th>
+            <th style="text-align:center;">% Pago</th>
+            <th></th>
+            <th></th>
+          </tr></thead>
+          <tbody id="cuerpoMasivo"></tbody>
+        </table>
+        <div class="sticky-actions-bar">
+          <span id="dirtyCountLabel" class="dirty-badge hidden">0 sin guardar</span>
+          <button class="btn btn-primary" id="btnGuardarTodo" onclick="guardarTodosLosCambios()" disabled>💾 Guardar todos los cambios</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div id="toastHost"></div>
+<div id="modalHost" class="hidden"></div>
+
+<script>
+// =========================================================================
+const URL_WEB_APP = "https://script.google.com/macros/s/AKfycbwEfG_e-DQLTSbs_72-H6JwgLvJQVH50DpNJpvM8ZJlFU4z9rHTXE_VuK9W14n-dDYl/exec";
+// =========================================================================
+
+let editRowIndex = null;
+let datosGlobales = [];
+let currentSortField = 'pctPago';
+let currentSortDesc = true;
+let filasSucias = new Set();      // rowIndex de filas con cambios sin guardar (edición masiva)
+let filasGuardando = new Set();   // rowIndex de filas en proceso de guardado
+
+const form = document.getElementById('asesorForm');
+const tableLoader = document.getElementById('tableLoader');
+const containerEquipos = document.getElementById('supervisoresContainer');
+const emptyStateMessage = document.getElementById('emptyStateMessage');
+const noResultsMessage = document.getElementById('noResultsMessage');
+const formAlert = document.getElementById('formAlert');
+const submitLoader = document.getElementById('submitLoader');
+const btnSubmit = document.getElementById('btnSubmit');
+const btnSubmitText = document.getElementById('btnSubmitText');
+const formTitle = document.getElementById('formTitle');
+const btnCancelEdit = document.getElementById('btnCancelEdit');
+const rankingCount = document.getElementById('rankingCount');
+const lastUpdated = document.getElementById('lastUpdated');
+
+const vistas = { dashboard: document.getElementById('vistaDashboard'), ranking: document.getElementById('vistaRanking'), masivo: document.getElementById('vistaMasivo'), registro: document.getElementById('vistaRegistro') };
+const botonesNav = { dashboard: document.getElementById('btnTabDashboard'), ranking: document.getElementById('btnTabRanking'), masivo: document.getElementById('btnTabMasivo'), registro: document.getElementById('btnTabRegistro') };
+
+function mostrarPestaña(pestaña){
+  Object.keys(vistas).forEach(key => {
+    vistas[key].classList.add('hidden');
+    botonesNav[key].classList.remove('active');
+  });
+  vistas[pestaña].classList.remove('hidden');
+  botonesNav[pestaña].classList.add('active');
+  if(pestaña === 'ranking' || pestaña === 'dashboard') cargarDatos();
+  if(pestaña === 'masivo'){
+    if(datosGlobales.length === 0) cargarDatos();
+    else renderizarTablaMasiva();
+  }
+}
+
+function limpiarYMostrarRegistro(){
+  form.reset();
+  document.getElementById('fechaRegistro').valueAsDate = new Date();
+  editRowIndex = null;
+  formTitle.innerText = "Registrar Avance del Asesor";
+  btnSubmitText.innerText = "Cargar registro";
+  btnCancelEdit.classList.add('hidden');
+  formAlert.classList.add('hidden');
+  mostrarPestaña('registro');
+}
+
+const formatoMoneda = (val) => new Intl.NumberFormat('es-PE', { style:'currency', currency:'PEN' }).format(val || 0);
+const formatoPorcentaje = (val) => new Intl.NumberFormat('es-PE', { style:'percent', minimumFractionDigits:1 }).format(val || 0);
+const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// ---------------- toasts ----------------
+function mostrarToast(msg, tipo='ok'){
+  const host = document.getElementById('toastHost');
+  const el = document.createElement('div');
+  el.className = `toast ${tipo}`;
+  el.innerText = msg;
+  host.appendChild(el);
+  setTimeout(() => { el.style.transition='.25s'; el.style.opacity='0'; setTimeout(()=>el.remove(), 250); }, 3200);
+}
+
+// ---------------- confirm modal ----------------
+function confirmarModal(titulo, mensaje){
+  return new Promise(resolve => {
+    const host = document.getElementById('modalHost');
+    host.innerHTML = `
+      <div class="modal-box">
+        <h3>${escapeHtml(titulo)}</h3>
+        <p>${escapeHtml(mensaje)}</p>
+        <div class="modal-actions">
+          <button class="btn btn-muted" id="modalCancel">Cancelar</button>
+          <button class="btn btn-primary" id="modalConfirm">Eliminar</button>
+        </div>
+      </div>`;
+    host.classList.remove('hidden');
+    const close = (val) => { host.classList.add('hidden'); host.innerHTML=''; resolve(val); };
+    document.getElementById('modalCancel').onclick = () => close(false);
+    document.getElementById('modalConfirm').onclick = () => close(true);
+    host.onclick = (e) => { if(e.target === host) close(false); };
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('fechaRegistro').valueAsDate = new Date();
+  mostrarPestaña('dashboard');
+});
+
+function ordenarPor(campo){
+  if(currentSortField === campo) currentSortDesc = !currentSortDesc;
+  else { currentSortField = campo; currentSortDesc = true; }
+  renderizarTablasEquipos();
+}
+function getSortIcon(campo){
+  if(currentSortField !== campo) return '↕';
+  return currentSortDesc ? '▼' : '▲';
+}
+
+function cargarDatos(){
+  tableLoader.classList.remove('hidden');
+  containerEquipos.classList.add('hidden');
+  emptyStateMessage.classList.add('hidden');
+  noResultsMessage.classList.add('hidden');
+  document.getElementById('masivoLoader').classList.remove('hidden');
+  document.getElementById('masivoContainer').classList.add('hidden');
+  document.getElementById('masivoEmptyState').classList.add('hidden');
+
+  fetch(URL_WEB_APP)
+    .then(res => res.json())
+    .then(data => {
+      filasSucias.clear();
+      filasGuardando.clear();
+
+      if(!data || data.length === 0){
+        datosGlobales = [];
+        emptyStateMessage.classList.remove('hidden');
+        tableLoader.classList.add('hidden');
+        document.getElementById('masivoLoader').classList.add('hidden');
+        document.getElementById('masivoEmptyState').classList.remove('hidden');
+        procesarDashboard();
+        return;
+      }
+
+      datosGlobales = data.map(row => {
+        const rowIndex = row['ROW_INDEX'];
+        const asesor = row['ASESOR'] || '-';
+        const metaPdp = parseFloat(row['META PDP DEL DIA']) || 0;
+        const avance = parseFloat(row['AVANCE']) || 0;
+        const metaPago = parseFloat(row['META PAGO']) || 0;
+        const pagos = parseFloat(row['PAGOS']) || 0;
+        const estado = row['ESTADO'] || '-';
+        const supervisor = row['SUPERVISOR'] ? row['SUPERVISOR'].toString().toUpperCase().trim() : 'SIN ASIGNAR';
+        const fecha = row['FECHA'] || '-';
+        const pctPdp = metaPdp > 0 ? (avance / metaPdp) : 0;
+        const pctPago = metaPago > 0 ? (pagos / metaPago) : 0;
+        return { rowIndex, asesor, supervisor, metaPdp, avance, pctPdp, metaPago, pagos, pctPago, estado, fecha };
+      });
+
+      procesarDashboard();
+      renderizarTablasEquipos();
+      poblarFiltroSupervisorMasivo();
+      renderizarTablaMasiva();
+      tableLoader.classList.add('hidden');
+      containerEquipos.classList.remove('hidden');
+      document.getElementById('masivoLoader').classList.add('hidden');
+      document.getElementById('masivoContainer').classList.remove('hidden');
+      lastUpdated.innerText = 'Actualizado ' + new Date().toLocaleTimeString('es-PE', { hour:'2-digit', minute:'2-digit' });
+    })
+    .catch(() => {
+      tableLoader.innerHTML = `<span style="color:var(--critical); font-weight:700;">❌ Error de conexión. Verifica que el Web App esté publicado como "Nueva implementación".</span>`;
+      document.getElementById('masivoLoader').innerHTML = `<span style="color:var(--critical); font-weight:700;">❌ Error de conexión.</span>`;
+      lastUpdated.innerText = 'No se pudo sincronizar';
+    });
+}
+
+function refrescarMasivo(){
+  if(filasSucias.size > 0){
+    confirmarModal('Descartar cambios sin guardar', `Tienes ${filasSucias.size} fila(s) con cambios sin guardar. Refrescar descartará esos cambios. ¿Continuar?`)
+      .then(ok => { if(ok) cargarDatos(); });
+  } else {
+    cargarDatos();
+  }
+}
+
+function poblarFiltroSupervisorMasivo(){
+  const sel = document.getElementById('filtroSupervisorMasivo');
+  const valorActual = sel.value;
+  const supervisores = [...new Set(datosGlobales.map(d => d.supervisor))].sort();
+  sel.innerHTML = '<option value="">Todos los supervisores</option>' +
+    supervisores.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+  if(supervisores.includes(valorActual)) sel.value = valorActual;
+}
+
+// ---------------- radial ring helper ----------------
+function pintarAnillo(id, txtId, pct){
+  const clamped = Math.max(0, Math.min(1, pct));
+  const deg = Math.round(clamped * 360);
+  const color = pct >= 0.7 ? 'var(--success)' : pct >= 0.5 ? 'var(--warning)' : 'var(--critical)';
+  const ring = document.getElementById(id);
+  ring.style.background = `conic-gradient(${color} ${deg}deg, #ecedf1 ${deg}deg)`;
+  document.getElementById(txtId).innerText = formatoPorcentaje(pct);
+}
+
+// ---------------- dashboard ----------------
+function procesarDashboard(){
+  let totalMetaPagos = 0, totalPagos = 0, asesoresConPago = 0;
+  datosGlobales.forEach(d => {
+    totalMetaPagos += d.metaPago;
+    totalPagos += d.pagos;
+    if(d.pagos > 0) asesoresConPago++;
+  });
+
+  const pctTotalPagos = totalMetaPagos > 0 ? (totalPagos / totalMetaPagos) : 0;
+  document.getElementById('dashPctPagos').innerText = formatoPorcentaje(pctTotalPagos);
+  pintarAnillo('ringPagos', 'ringPagosTxt', pctTotalPagos);
+
+  const pctAsesoresActivos = datosGlobales.length > 0 ? (asesoresConPago / datosGlobales.length) : 0;
+  document.getElementById('dashPctCantidad').innerText = formatoPorcentaje(pctAsesoresActivos);
+  pintarAnillo('ringCantidad', 'ringCantidadTxt', pctAsesoresActivos);
+
+  const variacion = totalMetaPagos > 0 ? ((totalPagos - totalMetaPagos) / totalMetaPagos) : 0;
+  const colorVar = variacion >= 0 ? 'var(--success)' : 'var(--critical)';
+  const signoVar = variacion >= 0 ? '+' : '';
+  const dv = document.getElementById('dashVariacion');
+  dv.innerText = signoVar + formatoPorcentaje(variacion);
+  dv.style.color = colorVar;
+  pintarAnillo('ringVariacion', 'ringVariacionTxt', Math.abs(variacion));
+
+  let optimos = [], medios = [], criticos = [];
+  datosGlobales.forEach(d => {
+    if(d.pctPago >= 0.7) optimos.push(d);
+    else if(d.pctPago >= 0.5) medios.push(d);
+    else criticos.push(d);
+  });
+  optimos.sort((a,b)=>b.pagos-a.pagos);
+  medios.sort((a,b)=>b.pagos-a.pagos);
+  criticos.sort((a,b)=>b.pagos-a.pagos);
+
+  const generarFilas = (arr) => {
+    if(arr.length === 0) return `<tr><td colspan="2" class="empty-row">No hay asesores en este rango</td></tr>`;
+    return arr.map(d => `
+      <tr>
+        <td style="font-weight:700; color:#2c2e37;">${escapeHtml(d.asesor)}</td>
+        <td class="r tabular" style="font-weight:600;">${formatoMoneda(d.pagos)}</td>
+      </tr>`).join('');
+  };
+  document.getElementById('listaOptimos').innerHTML = generarFilas(optimos);
+  document.getElementById('listaMedios').innerHTML = generarFilas(medios);
+  document.getElementById('listaCriticos').innerHTML = generarFilas(criticos);
+}
+
+// ---------------- excel export ----------------
+function descargarExcel(){
+  if(datosGlobales.length === 0){ mostrarToast('No hay datos para exportar.', 'bad'); return; }
+  const excelData = datosGlobales.map(d => ({
+    "FECHA": d.fecha, "SUPERVISOR": d.supervisor, "ASESOR": d.asesor,
+    "META PDP": d.metaPdp, "AVANCE PDP": d.avance, "% CUMP. PDP": (d.pctPdp*100).toFixed(2)+'%',
+    "META PAGO": d.metaPago, "PAGO REAL": d.pagos, "% CUMP. PAGO": (d.pctPago*100).toFixed(2)+'%',
+    "ESTADO": d.estado
+  }));
+  const worksheet = XLSX.utils.json_to_sheet(excelData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Histórico Asesores");
+  const d = new Date();
+  const fechaStr = `${d.getDate()}-${d.getMonth()+1}-${d.getFullYear()}`;
+  XLSX.writeFile(workbook, `Reporte_Santander_${fechaStr}.xlsx`);
+  mostrarToast('Reporte descargado correctamente.');
+}
+
+// ---------------- ranking / team tables ----------------
+function renderizarTablasEquipos(){
+  const q = (document.getElementById('buscarAsesor')?.value || '').trim().toLowerCase();
+  const datosFiltrados = q
+    ? datosGlobales.filter(d => d.asesor.toLowerCase().includes(q) || d.supervisor.toLowerCase().includes(q))
+    : datosGlobales;
+
+  rankingCount.innerText = `${datosFiltrados.length} de ${datosGlobales.length} asesor(es) mostrados`;
+
+  if(datosGlobales.length > 0 && datosFiltrados.length === 0){
+    containerEquipos.classList.add('hidden');
+    noResultsMessage.classList.remove('hidden');
+    return;
+  }
+  noResultsMessage.classList.add('hidden');
+  if(datosGlobales.length > 0) containerEquipos.classList.remove('hidden');
+
+  const agrupado = {};
+  datosFiltrados.forEach(d => { (agrupado[d.supervisor] = agrupado[d.supervisor] || []).push(d); });
+
+  containerEquipos.innerHTML = '';
+
+  Object.keys(agrupado).sort().forEach(sup => {
+    const total = agrupado[sup].length;
+    const cumplen = agrupado[sup].filter(r => r.pctPago >= 0.7).length;
+    const pctCumplen = total > 0 ? (cumplen/total)*100 : 0;
+    const pctNoCumplen = 100 - pctCumplen;
+
+    agrupado[sup].sort((a,b) => {
+      let va = a[currentSortField], vb = b[currentSortField];
+      if(typeof va === 'string') va = va.toLowerCase();
+      if(typeof vb === 'string') vb = vb.toLowerCase();
+      if(va < vb) return currentSortDesc ? 1 : -1;
+      if(va > vb) return currentSortDesc ? -1 : 1;
+      return 0;
+    });
+
+    const filasHTML = agrupado[sup].map(row => {
+      let emoji = "😭", pillStyle = "background:var(--critical-bg); color:var(--critical);";
+      if(row.pctPago >= 0.7){ emoji = "😀"; pillStyle = "background:var(--success-bg); color:var(--success);"; }
+      else if(row.pctPago >= 0.5){ emoji = "😐"; pillStyle = "background:var(--warning-bg); color:var(--warning);"; }
+
+      return `
+        <tr>
+          <td style="font-weight:700; color:#2c2e37;">${escapeHtml(row.asesor)}</td>
+          <td class="r tabular">${formatoMoneda(row.metaPdp)}</td>
+          <td class="r tabular" style="font-weight:600;">${formatoMoneda(row.avance)}</td>
+          <td style="text-align:center; font-weight:700;" class="tabular">${formatoPorcentaje(row.pctPdp)}</td>
+          <td class="r tabular">${formatoMoneda(row.metaPago)}</td>
+          <td class="r tabular" style="font-weight:600;">${formatoMoneda(row.pagos)}</td>
+          <td style="text-align:center;" class="tabular"><span class="pill" style="${pillStyle}">${formatoPorcentaje(row.pctPago)}</span></td>
+          <td style="text-align:center; font-size:15px;" title="Cumplimiento">${emoji}</td>
+          <td style="text-align:center; white-space:nowrap;">
+            <button class="icon-btn" title="Editar" onclick="editarRegistro(${row.rowIndex}, '${escapeHtml(row.asesor)}', '${escapeHtml(row.supervisor)}', ${row.metaPdp}, ${row.avance}, ${row.metaPago}, ${row.pagos}, '${escapeHtml(row.estado)}', '${row.fecha}')">✏️</button>
+            <button class="icon-btn" title="Eliminar" onclick="eliminarRegistro(${row.rowIndex}, '${escapeHtml(row.asesor)}')">🗑️</button>
+          </td>
+        </tr>`;
+    }).join('');
+
+    const card = document.createElement('div');
+    card.className = 'team-card';
+    card.innerHTML = `
+      <div class="team-head"><span style="overflow:hidden;text-overflow:ellipsis;">👥 ${escapeHtml(sup)}</span><span class="team-badge">${total} asesor(es)</span></div>
+      <div class="team-bar"><span style="width:${pctCumplen}%"></span></div>
+      <div class="team-meta"><span class="ok">✅ Cumplen: ${pctCumplen.toFixed(0)}%</span><span class="no">❌ No cumplen: ${pctNoCumplen.toFixed(0)}%</span></div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr>
+            <th onclick="ordenarPor('asesor')">Asesor <span class="sort-icon">${getSortIcon('asesor')}</span></th>
+            <th onclick="ordenarPor('metaPdp')" style="text-align:right;">M.PDP <span class="sort-icon">${getSortIcon('metaPdp')}</span></th>
+            <th onclick="ordenarPor('avance')" style="text-align:right;">Av. <span class="sort-icon">${getSortIcon('avance')}</span></th>
+            <th onclick="ordenarPor('pctPdp')" style="text-align:center;">% <span class="sort-icon">${getSortIcon('pctPdp')}</span></th>
+            <th onclick="ordenarPor('metaPago')" style="text-align:right;">M.PAGO <span class="sort-icon">${getSortIcon('metaPago')}</span></th>
+            <th onclick="ordenarPor('pagos')" style="text-align:right;">Pagos <span class="sort-icon">${getSortIcon('pagos')}</span></th>
+            <th onclick="ordenarPor('pctPago')" style="text-align:center;">% <span class="sort-icon">${getSortIcon('pctPago')}</span></th>
+            <th style="text-align:center;">Est.</th>
+            <th style="text-align:center;">Acc.</th>
+          </tr></thead>
+          <tbody>${filasHTML}</tbody>
+        </table>
+      </div>`;
+    containerEquipos.appendChild(card);
+  });
+}
+
+// ---------------- edición masiva ----------------
+function actualizarBadgeSucias(){
+  const badge = document.getElementById('dirtyCountLabel');
+  const btn = document.getElementById('btnGuardarTodo');
+  if(filasSucias.size > 0){
+    badge.classList.remove('hidden');
+    badge.innerText = `${filasSucias.size} sin guardar`;
+    btn.disabled = filasGuardando.size > 0;
+  } else {
+    badge.classList.add('hidden');
+    btn.disabled = true;
+  }
+}
+
+function fechaDDMMYYYYaISO(fechaStr){
+  if(!fechaStr || fechaStr === '-') return '';
+  const partes = fechaStr.split('/');
+  return partes.length === 3 ? `${partes[2]}-${partes[1]}-${partes[0]}` : '';
+}
+function fechaISOaDDMMYYYY(iso){
+  if(!iso) return '';
+  const partes = iso.split('-');
+  return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : '';
+}
+
+function renderizarTablaMasiva(){
+  const cuerpo = document.getElementById('cuerpoMasivo');
+  const supFiltro = document.getElementById('filtroSupervisorMasivo').value;
+  const q = (document.getElementById('buscarAsesorMasivo').value || '').trim().toLowerCase();
+
+  let filas = datosGlobales;
+  if(supFiltro) filas = filas.filter(d => d.supervisor === supFiltro);
+  if(q) filas = filas.filter(d => d.asesor.toLowerCase().includes(q));
+
+  if(filas.length === 0){
+    cuerpo.innerHTML = `<tr><td colspan="11" class="empty-row">Ningún asesor coincide con el filtro seleccionado</td></tr>`;
+    actualizarBadgeSucias();
+    return;
+  }
+
+  cuerpo.innerHTML = filas.map(row => {
+    const esSucia = filasSucias.has(row.rowIndex);
+    const guardando = filasGuardando.has(row.rowIndex);
+    return `
+      <tr id="filaMasiva_${row.rowIndex}" class="${esSucia ? 'dirty' : ''}">
+        <td><input class="cell-input date" type="date" value="${fechaDDMMYYYYaISO(row.fecha)}" onchange="actualizarCampoMasivo(${row.rowIndex}, 'fecha', this.value)"></td>
+        <td><input class="cell-input" style="min-width:110px; text-transform:uppercase;" type="text" value="${escapeHtml(row.asesor)}" onchange="actualizarCampoMasivo(${row.rowIndex}, 'asesor', this.value)"></td>
+        <td><input class="cell-input" style="min-width:110px; text-transform:uppercase;" type="text" value="${escapeHtml(row.supervisor)}" onchange="actualizarCampoMasivo(${row.rowIndex}, 'supervisor', this.value)"></td>
+        <td><input class="cell-input num" type="number" min="0" step="0.01" value="${row.metaPdp}" onchange="actualizarCampoMasivo(${row.rowIndex}, 'metaPdp', this.value)"></td>
+        <td><input class="cell-input num" type="number" min="0" step="0.01" value="${row.avance}" onchange="actualizarCampoMasivo(${row.rowIndex}, 'avance', this.value)"></td>
+        <td class="cell-pct tabular" id="pctPdp_${row.rowIndex}">${formatoPorcentaje(row.pctPdp)}</td>
+        <td><input class="cell-input num" type="number" min="0" step="0.01" value="${row.metaPago}" onchange="actualizarCampoMasivo(${row.rowIndex}, 'metaPago', this.value)"></td>
+        <td><input class="cell-input num" type="number" min="0" step="0.01" value="${row.pagos}" onchange="actualizarCampoMasivo(${row.rowIndex}, 'pagos', this.value)"></td>
+        <td class="cell-pct tabular" id="pctPago_${row.rowIndex}">${formatoPorcentaje(row.pctPago)}</td>
+        <td><button class="row-save-btn" id="btnGuardarFila_${row.rowIndex}" onclick="guardarFilaMasiva(${row.rowIndex})" ${esSucia ? '' : 'disabled'}>${guardando ? '…' : '💾 Guardar'}</button></td>
+        <td><button class="icon-btn" title="Eliminar" onclick="eliminarRegistro(${row.rowIndex}, '${escapeHtml(row.asesor)}')">🗑️</button></td>
+      </tr>`;
+  }).join('');
+
+  actualizarBadgeSucias();
+}
+
+function actualizarCampoMasivo(rowIndex, campo, valor){
+  const row = datosGlobales.find(d => d.rowIndex === rowIndex);
+  if(!row) return;
+
+  if(['metaPdp','avance','metaPago','pagos'].includes(campo)){
+    row[campo] = parseFloat(valor) || 0;
+  } else if(campo === 'fecha'){
+    row.fecha = fechaISOaDDMMYYYY(valor);
+  } else if(campo === 'asesor' || campo === 'supervisor'){
+    row[campo] = valor.toUpperCase().trim();
+  }
+
+  row.pctPdp = row.metaPdp > 0 ? (row.avance / row.metaPdp) : 0;
+  row.pctPago = row.metaPago > 0 ? (row.pagos / row.metaPago) : 0;
+
+  const pctPdpCell = document.getElementById(`pctPdp_${rowIndex}`);
+  const pctPagoCell = document.getElementById(`pctPago_${rowIndex}`);
+  if(pctPdpCell) pctPdpCell.innerText = formatoPorcentaje(row.pctPdp);
+  if(pctPagoCell) pctPagoCell.innerText = formatoPorcentaje(row.pctPago);
+
+  filasSucias.add(rowIndex);
+  const tr = document.getElementById(`filaMasiva_${rowIndex}`);
+  if(tr) tr.classList.add('dirty');
+  const btn = document.getElementById(`btnGuardarFila_${rowIndex}`);
+  if(btn) btn.disabled = false;
+
+  actualizarBadgeSucias();
+}
+
+function enviarFilaAlServidor(row){
+  const payload = {
+    action: 'edit',
+    rowIndex: row.rowIndex,
+    fecha: row.fecha,
+    asesor: row.asesor,
+    supervisor: row.supervisor,
+    metaPdp: row.metaPdp,
+    avancePdp: row.avance,
+    metaPago: row.metaPago,
+    pagos: row.pagos,
+    comentario: row.estado === '-' ? '' : row.estado
+  };
+  return fetch(URL_WEB_APP, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload)
+  }).then(res => res.json());
+}
+
+async function guardarFilaMasiva(rowIndex){
+  const row = datosGlobales.find(d => d.rowIndex === rowIndex);
+  if(!row) return;
+
+  filasGuardando.add(rowIndex);
+  const btn = document.getElementById(`btnGuardarFila_${rowIndex}`);
+  if(btn){ btn.disabled = true; btn.innerText = '…'; }
+
+  try{
+    const data = await enviarFilaAlServidor(row);
+    if(data.status === 'success'){
+      filasSucias.delete(rowIndex);
+      const tr = document.getElementById(`filaMasiva_${rowIndex}`);
+      if(tr) tr.classList.remove('dirty');
+      mostrarToast(`${row.asesor}: guardado.`);
+    } else {
+      mostrarToast(`Error al guardar ${row.asesor}: ${data.message}`, 'bad');
+    }
+  } catch(err){
+    mostrarToast(`Error de red al guardar ${row.asesor}.`, 'bad');
+  } finally {
+    filasGuardando.delete(rowIndex);
+    if(btn){ btn.innerText = '💾 Guardar'; btn.disabled = !filasSucias.has(rowIndex); }
+    actualizarBadgeSucias();
+  }
+}
+
+async function guardarTodosLosCambios(){
+  if(filasSucias.size === 0) return;
+  const pendientes = [...filasSucias];
+  const btnTodo = document.getElementById('btnGuardarTodo');
+  btnTodo.disabled = true;
+  btnTodo.innerText = `💾 Guardando ${pendientes.length} registro(s)…`;
+
+  pendientes.forEach(rowIndex => {
+    filasGuardando.add(rowIndex);
+    const btnFila = document.getElementById(`btnGuardarFila_${rowIndex}`);
+    if(btnFila){ btnFila.disabled = true; btnFila.innerText = '…'; }
+  });
+
+  const filasAEnviar = pendientes
+    .map(rowIndex => datosGlobales.find(d => d.rowIndex === rowIndex))
+    .filter(Boolean)
+    .map(row => ({
+      rowIndex: row.rowIndex, fecha: row.fecha, asesor: row.asesor, supervisor: row.supervisor,
+      metaPdp: row.metaPdp, avancePdp: row.avance, metaPago: row.metaPago, pagos: row.pagos,
+      comentario: row.estado === '-' ? '' : row.estado
+    }));
+
+  try{
+    const res = await fetch(URL_WEB_APP, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: 'bulkEdit', rows: filasAEnviar })
+    });
+    const data = await res.json();
+
+    const rowIndexesConError = new Set((data.errors || []).map(er => er.rowIndex));
+    pendientes.forEach(rowIndex => {
+      filasGuardando.delete(rowIndex);
+      if(!rowIndexesConError.has(rowIndex)){
+        filasSucias.delete(rowIndex);
+        const tr = document.getElementById(`filaMasiva_${rowIndex}`);
+        if(tr) tr.classList.remove('dirty');
+      }
+      const btnFila = document.getElementById(`btnGuardarFila_${rowIndex}`);
+      if(btnFila){ btnFila.innerText = '💾 Guardar'; btnFila.disabled = !filasSucias.has(rowIndex); }
+    });
+
+    const actualizados = data.updated ?? (pendientes.length - rowIndexesConError.size);
+    if(data.status === 'success') mostrarToast(`${actualizados} registro(s) guardado(s) correctamente.`);
+    else if(data.status === 'partial') mostrarToast(`${actualizados} guardado(s), ${data.errors.length} con error. Revisa e intenta de nuevo.`, 'bad');
+    else mostrarToast(`Error al guardar: ${data.message || 'intenta nuevamente'}`, 'bad');
+
+  } catch(err){
+    pendientes.forEach(rowIndex => {
+      filasGuardando.delete(rowIndex);
+      const btnFila = document.getElementById(`btnGuardarFila_${rowIndex}`);
+      if(btnFila){ btnFila.innerText = '💾 Guardar'; btnFila.disabled = false; }
+    });
+    mostrarToast('Error de red al guardar los cambios. Verifica tu conexión e intenta de nuevo.', 'bad');
+  } finally {
+    btnTodo.innerText = '💾 Guardar todos los cambios';
+    actualizarBadgeSucias();
+  }
+}
+
+function editarRegistro(rowIndex, asesor, supervisor, metaPdp, avance, metaPago, pagos, estado, fechaStr){
+  editRowIndex = rowIndex;
+  document.getElementById('asesor').value = asesor;
+  document.getElementById('supervisor').value = supervisor === 'SIN ASIGNAR' ? '' : supervisor;
+  document.getElementById('metaPdp').value = metaPdp;
+  document.getElementById('avancePdp').value = avance;
+  document.getElementById('metaPago').value = metaPago;
+  document.getElementById('pagos').value = pagos;
+  document.getElementById('comentario').value = estado === '-' ? '' : estado;
+
+  if(fechaStr && fechaStr !== '-'){
+    const partes = fechaStr.split('/');
+    if(partes.length === 3) document.getElementById('fechaRegistro').value = `${partes[2]}-${partes[1]}-${partes[0]}`;
+  }
+
+  formTitle.innerText = `Editar avance: ${asesor}`;
+  btnSubmitText.innerText = "Actualizar registro";
+  btnCancelEdit.classList.remove('hidden');
+  mostrarPestaña('registro');
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
+async function eliminarRegistro(rowIndex, asesor){
+  const ok = await confirmarModal('Eliminar registro', `¿Confirmas eliminar el registro de ${asesor}? Esta acción no se puede deshacer.`);
+  if(!ok) return;
+
+  tableLoader.classList.remove('hidden');
+  containerEquipos.classList.add('hidden');
+  document.getElementById('masivoLoader').classList.remove('hidden');
+  document.getElementById('masivoContainer').classList.add('hidden');
+
+  fetch(URL_WEB_APP, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action:'delete', rowIndex })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if(data.status === "success"){ mostrarToast('Registro eliminado.'); cargarDatos(); }
+    else {
+      mostrarToast('Error: ' + data.message, 'bad');
+      tableLoader.classList.add('hidden');
+      document.getElementById('masivoLoader').classList.add('hidden');
+    }
+  })
+  .catch(() => { mostrarToast('Error de red al intentar eliminar.', 'bad'); cargarDatos(); });
+}
+
+form.addEventListener('submit', function(e){
+  e.preventDefault();
+  submitLoader.classList.remove('hidden');
+  btnSubmit.disabled = true;
+  formAlert.className = "hidden alert";
+
+  const fechaIngresada = document.getElementById('fechaRegistro').value;
+  let fechaFormateada = "";
+  if(fechaIngresada){
+    const partes = fechaIngresada.split('-');
+    fechaFormateada = `${partes[2]}/${partes[1]}/${partes[0]}`;
+  }
+
+  const payload = {
+    action: editRowIndex ? 'edit' : 'add',
+    rowIndex: editRowIndex,
+    fecha: fechaFormateada,
+    asesor: document.getElementById('asesor').value,
+    supervisor: document.getElementById('supervisor').value,
+    metaPdp: document.getElementById('metaPdp').value,
+    avancePdp: document.getElementById('avancePdp').value,
+    metaPago: document.getElementById('metaPago').value,
+    pagos: document.getElementById('pagos').value,
+    comentario: document.getElementById('comentario').value || "Pendiente validación de Soluciones Financieras."
+  };
+
+  fetch(URL_WEB_APP, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload)
+  })
+  .then(res => res.json())
+  .then(data => {
+    submitLoader.classList.add('hidden');
+    btnSubmit.disabled = false;
+
+    if(data.status === "success"){
+      formAlert.innerHTML = editRowIndex ? `<strong>Éxito:</strong> registro actualizado correctamente.` : `<strong>Éxito:</strong> información del asesor registrada.`;
+      formAlert.className = "alert ok";
+      mostrarToast(editRowIndex ? 'Registro actualizado.' : 'Registro cargado.');
+      setTimeout(() => { limpiarYMostrarRegistro(); mostrarPestaña('dashboard'); }, 1400);
+    } else {
+      throw new Error(data.message);
+    }
+  })
+  .catch(() => {
+    submitLoader.classList.add('hidden');
+    btnSubmit.disabled = false;
+    formAlert.innerHTML = `<strong>Error:</strong> error de red. Asegúrate de haber publicado una Nueva Implementación.`;
+    formAlert.className = "alert bad";
+  });
+});
+</script>
+</body>
+</html>
